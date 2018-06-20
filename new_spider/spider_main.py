@@ -1,8 +1,8 @@
-#coding:utf-8
-import html_downloader
-import html_outputer
-import html_parser
-import url_manager
+# coding:utf-8
+from new_spider import html_downloader
+from new_spider import html_outputer
+from new_spider import html_parser
+from new_spider import url_manager
 
 
 class SpiderMain(object):
@@ -33,6 +33,7 @@ class SpiderMain(object):
 
 if __name__ == '__main__':
     # 入口url
-    root_url = 'https://baike.baidu.com/view/21087.htm'
+    user_in_city = input('输入爬取城市：')
+    root_url = 'https://' + user_in_city + '.fang.lianjia.com/loupan/'
     obj_spider = SpiderMain()
     obj_spider.craw(root_url)

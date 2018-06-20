@@ -1,5 +1,5 @@
-#coding:utf-8
-#url管理器
+# coding:utf-8
+# url管理器
 
 
 class UrlManager(object):
@@ -20,7 +20,7 @@ class UrlManager(object):
             self.add_new_url(url)
 
     def has_new_url(self):
-        return  len(self.new_urls) != 0
+        return len(self.new_urls) != 0
 
     def get_new_url(self):
         new_url = self.new_urls.pop()

@@ -1,2 +1,0 @@
-# python-spider
-python-spider

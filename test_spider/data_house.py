@@ -10,19 +10,16 @@ from urllib.parse import urlparse
 
 
 # 操作excel
-wb = Workbook()
+wbExcel = Workbook()
 dest_filename = 'house.xlsx'
-ws1 = wb.active
-ws1.title = "house"
+ws1Active = wbExcel.active
+ws1Active.title = "house"
 
 update_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 # 爬取数据目标路径
-URL_COMMONT = 'https://fs.fang.lianjia.com/loupan/pg'
-DOWNLOAD_URL = []
-for i in range(43):
-    DOWNLOAD_URL.append(URL_COMMONT+str(i+1))
+# DOWNLOAD_URL = 'https://fs.fang.lianjia.com/loupan/pg8'
 
-
+# 数据库操作
 db = pymysql.connect("localhost", "root", "123456", "testjhipster", charset='utf8')
 print('连接上了数据库!')
 cursor = db.cursor()
@@ -45,28 +42,34 @@ sql = """
 cursor.execute(sql)
 
 
-def download_page(url):
+# 爬取更多的网页需要循环更新requests 的页面URL
+def download_page(urls):
     """获取url地址页面内容"""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.80 Safari/537.36'
     }
-    data = requests.get(url, headers=headers).content
+    data = requests.get(urls, headers=headers).content
+    # 循环抓取列表页信息
+    # for url in urls:
+    #     data_html = requests.get(url=url, headers=headers)
+    #     html = data_html.content
+    #     # 每次间隔1秒
+    #     time.sleep(1)
     return data
 
 
-def get_new_urls(page_url, soup):
-        new_urls = set()
-        # 获取所有标签
-        links = soup.find_all('a', href=re.compile(r'/pg/\d+'))
-        for link in links:
-            new_url = link['link']
-            # 全路径
-            new_full_url = urlparse.urljoin(page_url, new_url)
-            new_urls.add(new_full_url)
-            return new_urls
+def get_new_urls(user_in_num, user_in_city):
+    # 爬取数据目标路径
+    URL_COMMONT = 'https://' + user_in_city + '.fang.lianjia.com/loupan/pg'
+    # DOWNLOAD_URL = 'https://fs.fang.lianjia.com/loupan/pg8'
+    DOWNLOAD_URL = []
+    for url_next in range(1, int(user_in_num)):
+        DOWNLOAD_URL.append(URL_COMMONT+str(url_next))
+    return DOWNLOAD_URL
 
 
 def get_html(doc):
+
     soup = BeautifulSoup(doc, 'html.parser')
     # 目标数据的html
     ul = soup.find('ul', class_='resblock-list-wrapper')
@@ -94,7 +97,8 @@ def get_html(doc):
 
         total_price = detail_price.find('div', attrs={'class': 'second'})
 
-        price=detail_price.find('div', attrs={'class': 'main-price'}).find('span', attrs={'class': 'number'}).get_text()
+        price = detail_price.find('div', attrs={'class': 'main-price'}).find('span',
+                                                                             attrs={'class': 'number'}).get_text()
 
         if total_price:  # 判断是否有总价
             house_total_price.append(total_price.get_text())
@@ -107,22 +111,30 @@ def get_html(doc):
         house_address.append(location)
         house_area.append(area)
         house_price.append(price)
-        # house_total_price.append(total_price)
-
-    page = soup.find('a', attrs={'class': 'next'})  # 获取下一页
-    print(page)
-    if page:
-        # page_number = soup.find('div', attrs={'class': 'page-box'}).find('span', attrs={'class': 'page-box').
-        # page_number = 2
-        return house_name, house_type, house_selling, house_address, house_area, house_price, house_total_price, DOWNLOAD_URL + 43
+        # print(house_name)
+        # print(house_type)
+        # print(house_selling)
+        # print(house_address)
+        # print(house_area)
+        # print(house_price)
+        # print(house_total_price)
+    # page = soup.find('a', attrs={'class': 'next'})  # 获取下一页
+    # if page:
+    #     # page_number = soup.find('div', attrs={'class': 'page-box'}).find('span', attrs={'class': 'page-box').
+    #     # page_number = 2
+    #     return house_name, house_type, house_selling, house_address, house_area, house_price, house_total_price, DOWNLOAD_URL + 43
     return house_name, house_type, house_selling, house_address, house_area, house_price, house_total_price, None
 
 
 def main():
+    user_in_num = input('输入生成页数：')
+    user_in_city = input('输入爬取城市：')
+    # for i in new_urls(user_in_num):
+    #     print(i)
     # soup = BeautifulSoup(html_cont, 'html_parser', from_encoding='utf-8')
     # 爬取数据目标路径
-    url = DOWNLOAD_URL
-    # url = get_new_urls(DOWNLOAD_URL, soup)
+    # url = DOWNLOAD_URL
+    urls = get_new_urls(user_in_num, user_in_city)
     house_name = []  # 小区名字
     house_type = []  # 小区类型 商业或住宅
     house_selling = []  # 是否在售
@@ -130,10 +142,9 @@ def main():
     house_area = []  # 住房面积
     house_price = []  # 价格
     house_total_price = []  # 总价格
-
-    while url:
+    # 下载每个html     while urls:
+    for url in urls:
         print(url)
-        # 下载html
         doc = download_page(url)
         # 获取所有li
         name, type, selling, address, area, price, total_price, url = get_html(doc)
@@ -144,16 +155,10 @@ def main():
         house_area = house_area + area
         house_price = house_price + price
         house_total_price = house_total_price + total_price
+        # print(house_name, house_type, house_selling, house_address, house_area, house_price, house_total_price)
 
     # zip()函数用于将可迭代的对象作为参数，将对象中对应的元素打包成一个个元组，然后返回由这些元组组成的列表。
     for (i, m, o, p, q, w, x) in zip(house_name, house_type, house_selling, house_address, house_area, house_price, house_total_price):
-        col_A = 'A%s' % (name.index(i) + 1)
-        col_B = 'B%s' % (name.index(i) + 1)
-        col_C = 'C%s' % (name.index(i) + 1)
-        col_D = 'D%s' % (name.index(i) + 1)
-        col_E = 'E%s' % (name.index(i) + 1)
-        col_F = 'F%s' % (name.index(i) + 1)
-        col_G = 'G%s' % (name.index(i) + 1)
         print(i)
         print(m)
         print(o)
@@ -161,13 +166,22 @@ def main():
         print(q)
         print(w)
         print(x)
-        ws1[col_A] = i
-        ws1[col_B] = m
-        ws1[col_C] = o
-        ws1[col_D] = p
-        ws1[col_E] = q
-        ws1[col_F] = w
-        ws1[col_G] = x
+
+        col_A = 'A%s' % (house_name.index(i) + 1)
+        col_B = 'B%s' % (house_name.index(i) + 1)
+        col_C = 'C%s' % (house_name.index(i) + 1)
+        col_D = 'D%s' % (house_name.index(i) + 1)
+        col_E = 'E%s' % (house_name.index(i) + 1)
+        col_F = 'F%s' % (house_name.index(i) + 1)
+        col_G = 'G%s' % (house_name.index(i) + 1)
+
+        ws1Active[col_A] = i
+        ws1Active[col_B] = m
+        ws1Active[col_C] = o
+        ws1Active[col_D] = p
+        ws1Active[col_E] = q
+        ws1Active[col_F] = w
+        ws1Active[col_G] = x
 
         try:
             insert_house = ("INSERT INTO house(house_name, house_type, house_selling, house_address, house_area, house_price, house_total_price)" "VALUES(%s, %s, %s, %s,%s, %s, %s)")
@@ -182,7 +196,7 @@ def main():
     # 关闭连接
     cursor.close()
     db.close()
-    wb.save(filename=dest_filename)
+    wbExcel.save(filename=dest_filename)
 
 
 if __name__ == '__main__':

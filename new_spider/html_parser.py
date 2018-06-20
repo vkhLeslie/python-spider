@@ -17,7 +17,7 @@ class HtmlParser(object):
     def _get_new_urls(self, page_url, soup):
         new_urls =  set()
         #获取所有标签
-        links = soup.find_all('a', href=re.compile(r'/view/\d+\.htm'))
+        links = soup.find_all('a', href=re.compile(r'/pg/\d+\.htm'))
         for link in links:
             new_url = link['link']
             # 全路径
