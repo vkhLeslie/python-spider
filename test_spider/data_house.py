@@ -19,28 +19,46 @@ update_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 # 爬取数据目标路径
 # DOWNLOAD_URL = 'https://fs.fang.lianjia.com/loupan/pg8'
 
-# 数据库操作
+
 db = pymysql.connect("localhost", "root", "123456", "testjhipster", charset='utf8')
 print('连接上了数据库!')
 cursor = db.cursor()
-cursor.execute("DROP TABLE IF EXISTS `house`")
-# 创建表
-sql = """
-        CREATE TABLE `house` (
-          `id` int(11) NOT NULL AUTO_INCREMENT,
-          `house_name` varchar(100) NOT NULL,
-          `house_type` varchar(50) NOT NULL,
-          `house_selling` varchar(50) NOT NULL,
-          `house_address` varchar(100) NOT NULL,
-          `house_area` varchar(50) NOT NULL,
-          `house_price` varchar(30) NOT NULL,
-          `house_total_price` varchar(30) NOT NULL,
-          `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-          PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-        """
-cursor.execute(sql)
 
+
+# 数据库操作
+def create_table():
+    # cursor.execute("DROP TABLE IF EXISTS `house`")
+    if table_isexits(cursor,'house') == 0:
+        # 创建表
+        sql = """
+                    CREATE TABLE `house` (
+                      `id` int(11) NOT NULL AUTO_INCREMENT,
+                      `house_name` varchar(100) NOT NULL,
+                      `house_type` varchar(50) NOT NULL,
+                      `house_selling` varchar(50) NOT NULL,
+                      `house_address` varchar(100) NOT NULL,
+                      `house_area` varchar(50) NOT NULL,
+                      `house_price` varchar(30) NOT NULL,
+                      `house_total_price` varchar(30) NOT NULL,
+                      `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                      PRIMARY KEY (`id`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+                    """
+        cursor.execute(sql)
+    else:
+        print("house表已经存在")
+
+
+def table_isexits(cn, table_name):
+    sql = "show tables;"
+    cn.execute(sql)
+    tables = [cn.fetchall()]
+    table_list = re.findall('(\'.*?\')', str(tables))
+    table_list = [re.sub("'", '', each) for each in table_list]
+    if table_name in table_list:
+        return 1  # 存在返回1
+    else:
+        return 0  # 不存在返回0
 
 # 爬取更多的网页需要循环更新requests 的页面URL
 def download_page(urls):
@@ -129,6 +147,8 @@ def get_html(doc):
 def main():
     user_in_num = input('输入生成页数：')
     user_in_city = input('输入爬取城市：')
+    # 数据库操作 创建表
+    create_table()
     # for i in new_urls(user_in_num):
     #     print(i)
     # soup = BeautifulSoup(html_cont, 'html_parser', from_encoding='utf-8')
