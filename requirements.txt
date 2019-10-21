@@ -10,7 +10,7 @@ PyMySQL==0.8.1
 pytz==2018.3
 requests==2.18.4
 UNKNOWN==0.0.0
-urllib3==1.22
+urllib3==1.24.2
 workbook==1.1
 xlrd==1.1.0
 xlutils==2.0.0
